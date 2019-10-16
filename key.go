@@ -130,7 +130,7 @@ func extend(keyField string, keyNumber, nextBranchBasePointer int, indexStructur
 //
 
 // Search returns an array of zero or many index numbers based on the input search string and  "searchPrecisely"
-// searchPrecisely TRUE -- precise search, key must match existing
+// searchPrecisely TRUE -- precise search, key must match existing -- may return many items if duplicates exist
 // 			  	   FALSE -- global search, the input string must be a root of a set of one or more existing keys
 // (a blank, but not null, input string and "false" will return the entire index in ascending order)
 // "matchFound" is "true" if something is located
@@ -174,23 +174,23 @@ func Search(keyInput string, searchPrecisely bool, indexStructure *Index) (match
 		//
 		case 'R', 'S':
 			if keyField[i:i+1] == string(indexStructure.node[keyPointer].key) {
-				if i+1 == keyLength {
-					if searchPrecisely {
+				if i+1 == keyLength { // last character in key
+					if searchPrecisely { //  narrow the range to just this node
 						lastMatchPointer = indexStructure.node[keyPointer].rightPointer
 					}
 					matchFound = true
 					searching = false
 					break
-				} else {
-					if indexStructure.node[keyPointer].status == 'S' {
+				} else { // more characters remain in key
+					if indexStructure.node[keyPointer].status == 'S' { // at the terminal leaf so it doesn't match
 						matchFound = false
 						searching = false
 						break
-					}
+					} // keep traversing
 					keyPointer = indexStructure.node[keyPointer].rightPointer
 					i++
 				}
-			} else {
+			} else { // key doesn't match
 				matchFound = false
 				searching = false
 				break
@@ -198,8 +198,8 @@ func Search(keyInput string, searchPrecisely bool, indexStructure *Index) (match
 		//
 		case 'D':
 			if keyField[i:i+1] <= string(indexStructure.node[keyPointer].key) {
-				if !searchPrecisely {
-					lastMatchPointer = keyPointer
+				if !searchPrecisely { // global search
+					lastMatchPointer = keyPointer //  keep track of the base of the "current" branch
 				}
 				keyPointer = indexStructure.node[keyPointer].leftPointer
 			} else {
@@ -208,24 +208,24 @@ func Search(keyInput string, searchPrecisely bool, indexStructure *Index) (match
 		//
 		case 'K', 'L':
 			if keyField[i:i+1] == string(indexStructure.node[keyPointer].key) {
-				if i+1 == keyLength {
-					keyPointer = indexStructure.node[keyPointer].leftPointer
-					if searchPrecisely {
+				if i+1 == keyLength { // last character in key
+					if searchPrecisely { //  narrow the range
 						lastMatchPointer = keyPointer
 					}
+					keyPointer = indexStructure.node[keyPointer].leftPointer //  move into the duplicate branch
 					matchFound = true
 					searching = false
 					break
-				} else {
-					if indexStructure.node[keyPointer].status == 'L' {
+				} else { // more characters remain in key
+					if indexStructure.node[keyPointer].status == 'L' { // at the terminal leaf so it doesn't match
 						matchFound = false
 						searching = false
 						break
-					}
+					} // keep traversing
 					keyPointer = indexStructure.node[keyPointer].rightPointer
 					i++
 				}
-			} else {
+			} else { // key doesn't match
 				matchFound = false
 				searching = false
 				break
@@ -233,7 +233,7 @@ func Search(keyInput string, searchPrecisely bool, indexStructure *Index) (match
 		//
 		case 'X':
 			if keyField[i:i+1] == string(indexStructure.node[keyPointer].key) {
-				if i+1 == keyLength {
+				if i+1 == keyLength { // last character in key
 					if searchPrecisely {
 						matchFound = false
 					} else { // global search
@@ -242,11 +242,11 @@ func Search(keyInput string, searchPrecisely bool, indexStructure *Index) (match
 					}
 					searching = false
 					break
-				} else {
+				} else { // more characters remain in key so keep traversing
 					keyPointer = indexStructure.node[keyPointer].rightPointer
 					i++
 				}
-			} else {
+			} else { // key doesn't match
 				matchFound = false
 				searching = false
 				break
